@@ -29,3 +29,23 @@ Shortcut для генерации изображений с помощью [Wom
 ```
 python $SHORTCUTS/wombo_create
 ```
+
+
+Генерация изображения без ```Shortcut```:
+```
+python3 wombo_create.py [OPTIONS]
+OPTIONS:
+    -k KEY, identify_key если не указан используется то что в коде
+    -u, обновить файл со стилями
+    -i, продолжить загрузку после получения ID
+    -c, обрезать изображение 
+    -d, загрузить изображение
+    -s STYLE, стиль если указано r программа выберет сама
+    -p PROMPT,  текст если указано r программа выберет сама
+```
+```
+python3 wombo_create.py && \
+ python3 wombo_create.py -i && \
+  python3 wombo_create.py -d && \
+   python3 wombo_create.py -c
+```
