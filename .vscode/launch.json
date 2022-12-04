@@ -26,7 +26,9 @@
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal",
-            "args": []
+            "args": [
+                "-i"
+            ]
         }
     ]
 }
