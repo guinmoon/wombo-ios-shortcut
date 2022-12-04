@@ -9,65 +9,36 @@ import pickle
 
 DEBUG=False
 
-def sign_up(key):
-    body = {"key": key}
-
+def identify(identify_key):    
+    body = {"key": identify_key}
     r = requests.post(
-        f"https://identitytoolkit.googleapis.com/v1/accounts:signUp?key={key}",
+        f"https://identitytoolkit.googleapis.com/v1/accounts:signUp?key={identify_key}",
         data=body,
     )
-
     if r.status_code != requests.codes.ok:
         error = f"Error during identification. Status code error: {r.status_code}"
         print(error)
-        assert False, error
-
-    if DEBUG:
-        print("Google identification sign up.")
+        exit(1)
     id_token = r.json()["idToken"]
-    if DEBUG:
-        print("  => idToken got.")
-    return id_token
-
-
-def look_up(identify_key, id_token):
-    body = {"idToken": id_token}
-
-    r = requests.post(
-        f"https://identitytoolkit.googleapis.com/v1/accounts:lookup?key={identify_key}",
-        data=body,
-    )
-
-    if r.status_code != requests.codes.ok:
-        assert False, f"Error during identification. Status code error: {r.status_code}"
-
-    if DEBUG:
-        print("Google identification look up.")
-    local_id = r.json()["users"][0]["localId"]
-    if DEBUG:
-        print("  => localId got.")
-    return local_id
-
-def identify(identify_key):
-    id_token = sign_up(identify_key)
-    local_id = look_up(identify_key, id_token)
-    if DEBUG:
-        print("Identification done!")
+    local_id = ""
+    # body = {"idToken": id_token}
+    # r = requests.post(
+    #     f"https://identitytoolkit.googleapis.com/v1/accounts:lookup?key={identify_key}",
+    #     data=body,
+    # )
+    # if r.status_code != requests.codes.ok:
+    #     assert False, f"Error during identification. Status code error: {r.status_code}"
+    # local_id = r.json()["users"][0]["localId"]
+    # if DEBUG:
+    #     print("Identification done!")
 
     return {"id_token": id_token, "local_id": local_id}
 
 
-def task(session, id):
-    r = session.get(f"https://paint.api.wombo.ai/api/tasks/{id}")
-
-    rep = r.json()
-    if DEBUG:
-        print(f"Status: {rep['state']}")
-    return rep
 
 def create(id_token: str, prompt: str, style: int, ID=None):
-    s = requests.Session()
-    s.headers.update(
+    session = requests.Session()
+    session.headers.update(
         {
             "Authorization": "bearer " + id_token,
             "Origin": "https://paint.api.wombo.ai/",
@@ -75,87 +46,43 @@ def create(id_token: str, prompt: str, style: int, ID=None):
             "User-Agent": "Mozilla/5.0",
         }
     )
-
-    # def init_task():
-    #     # from io import StringIO
-    #     # body = StringIO()
-    #     # json.dump({"premium": False}, body)
-    #     # body=body.getvalue()
-    #     body = '{"premium": false}'
-    #     r = s.post("https://paint.api.wombo.ai/api/tasks", data=body)
-
-    #     return r.json()["id"]
-
     
-    body = (
-        '{"input_spec":{"prompt":"'
-        + prompt
-        + '","style":'
-        + str(style)
-        + ',"display_freq":10}}'
-    )
+    body = '{"input_spec":{"prompt":"' + prompt + '","style":' + str(style)+ ',"display_freq":10}}'        
 
     id=ID
     display_freq = 10
     if ID is None:
-        id = s.post("https://paint.api.wombo.ai/api/tasks", data='{"premium": false}').json()["id"]
-        r = s.put(f"https://paint.api.wombo.ai/api/tasks/{id}", data=body)
-
-        # wombolog.info(f"Status: {r.json()['state']}")
+        id = session.post("https://paint.api.wombo.ai/api/tasks", data='{"premium": false}').json()["id"]
+        r = session.put(f"https://paint.api.wombo.ai/api/tasks/{id}", data=body)
         if DEBUG:
             print(f"Status: {r.json()['state']}")
         display_freq = r.json()["input_spec"]["display_freq"] / 10
         with open('session.dump', 'wb') as f:
-            pickle.dump(s, f)
+            pickle.dump(session, f)
         with open('id.dump', 'w') as f:
             f.write(id)
         print(prompt)
         exit(0)
     else:
         with open('session.dump', 'rb') as f:
-            s = pickle.load(f)
+            session = pickle.load(f)
         with open('id.dump', 'r') as f:
             id = f.readline()
-
-    latest_task = task(s, id)    
+   
+    latest_task = session.get(f"https://paint.api.wombo.ai/api/tasks/{id}").json()
     while latest_task["state"] != "completed":
         time.sleep(display_freq)
-        latest_task = task(s, id)
+        latest_task = session.get(f"https://paint.api.wombo.ai/api/tasks/{id}").json()
 
-    result = s.post(f"https://paint.api.wombo.ai/api/tradingcard/{id}")
+
+    result = session.post(f"https://paint.api.wombo.ai/api/tradingcard/{id}")
     img_uri = result.json()
-
-    if img_uri:
-        if DEBUG:
-            print(f"Url result: {img_uri}")
-        return img_uri
-    else:
-        print("Invalid image uri, can't download result!")
-
-def generate_prompt2(prompttext_f,prompt_len):
-    prompt = open(prompttext_f).read().splitlines()
-    vocab = len(prompt)
-    generated = []
-    num_word = prompt_len
-    while len(sorted(set(generated), key=lambda d: generated.index(d))) < num_word:
-        rand = random.randint(0, vocab)
-        generated.append(prompt[rand-1])
-    return (' '.join(sorted(set(generated), key=lambda d: generated.index(d))))
+    return img_uri
 
 
 def get_random_style(styles_fname):
     styles = open(styles_fname).read().splitlines()
     return styles[random.randint(0,len(styles)-1)]
-
-# def generate_prompt_old(prompttext_f,prompt_len):
-#     prompt = open(prompttext_f).read().splitlines()
-#     vocab = len(prompt)
-#     generated = []
-#     num_word = prompt_len
-#     while len(sorted(set(generated), key=lambda d: generated.index(d))) < num_word:
-#         rand = random.randint(0, vocab)
-#         generated.append(prompt[rand-1])
-#     return (' '.join(sorted(set(generated), key=lambda d: generated.index(d))))
 
 def generate_prompt(prompttext1,prompttext2):
     prompt1 = open(prompttext1).read().splitlines()
@@ -175,7 +102,6 @@ def update_styles(styles_fname):
 
 identify_key = "AIzaSyDCvp5MTJLUdtBYEKYWXJrlLzu1zuKM6Xw"
 
-#https://paint.api.wombo.ai/api/styles
 
 style = "r"
 prompt = "r"
@@ -212,8 +138,6 @@ if args.id:
 if args.crop:
     from PIL import Image
     im = Image.open(res_f_name)
-    # EXIF = im.getexif()
-    # EXIF[0x9286] = f"({style}) {prompt}"
     width, height = im.size
     left = 62
     top = 215
@@ -222,19 +146,16 @@ if args.crop:
     
     im = im.crop((left, top, right, bottom))
     im.save(res_f_name)
-    # im.save(res_f_name,exif=EXIF)
-    print("done")
+    print("crop done")
     exit(0)
 
 __dir=os.path.dirname(os.path.realpath(__file__)) 
 
-if prompt=="r":   
-    # prompt = generate_prompt(__dir+"/words1",__dir+"/words2")
-    prompt = generate_prompt(__dir+"/words1.txt",__dir+"/words2.txt")
+if prompt=="r":       
+    prompt = generate_prompt(__dir+"/words1",__dir+"/words2")
 
-if style=="r":    
-    # style = get_random_style(__dir+"/styles")
-    style = get_random_style(__dir+"/styles.txt")
+if style=="r":        
+    style = get_random_style(__dir+"/styles")
 
 
 if  not args.download:
@@ -242,11 +163,13 @@ if  not args.download:
     img_uri = create(res["id_token"], prompt, style,task_id)
     with open('url.dump', 'w') as f:
         f.write(img_uri)    
+    print("get url done")   
 else:
     with open('url.dump', 'r') as f:
         img_uri=f.readline()
         r = requests.get(img_uri, allow_redirects=True)
         open(res_f_name, 'wb').write(r.content)
-print("done")   
+    print("download img done")   
+
 # print(img_uri)
 
