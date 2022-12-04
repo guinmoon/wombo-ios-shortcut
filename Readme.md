@@ -1,5 +1,4 @@
-Shortcut для генерации изображений с помощью wombo art
-Можно задать стиль итекст, можно дать программе сделать случайный выбор
+Shortcut для генерации изображений с помощью [Wombo Dream](https://dream.ai/create)
 
 Для работы скрипта необходимо установить [a-shell](https://holzschu.github.io/a-Shell_iOS/) 
 
@@ -9,10 +8,10 @@ Shortcut для генерации изображений с помощью womb
 
 [![TestFlight](./dist/imgs/icon3.png)](https://testflight.apple.com/join/WUdKe3f4)
 
-Скопируйте файлы styles.txt, words1.txt, words2.txt в директорию доступную на вашем устройстве
-полсе необходимо установить скрипт и указать расположение файлов styles.txt, words1.txt, words2.txt
+Скопируйте файлы ```wombo_create.py, styles.txt, words1.txt, words2.txt``` в директорию доступную на вашем устройстве
 
-Установите нужные быстрые команды 
+Установите необходимую команду и указжите расположение файлов ```wombo_create.py, styles.txt, words1.txt, words2.txt```
+
 
 Команда генерирует случайный текст и выбирает случайный стиль
 
@@ -23,3 +22,10 @@ Shortcut для генерации изображений с помощью womb
 
 [![icon1](./dist/imgs/icon2.png )](https://www.icloud.com/shortcuts/da61b07fcc4a4904ae7c15b5839c5cde) 
  WomboPyDialog
+
+Для того чобы полученое изображение автоматически устанавливалось в качестве обоев необходимо в конце команды добавить действие "Установить фото в качестве обоев"
+
+Для обновления списка стилей в a-shell выполните:
+```
+python $SHORTCUTS/wombo_create
+```
