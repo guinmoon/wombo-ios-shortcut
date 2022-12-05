@@ -15,12 +15,12 @@ Shortcut для генерации изображений с помощью [Wom
 
 Команда генерирует случайный текст и выбирает случайный стиль:
 
-[![icon1](./dist/imgs/icon1.png )](https://www.icloud.com/shortcuts/afc0c2ddc1f54916b2879779e91e605c) 
+[![icon1](./dist/imgs/icon1.png )](./WomboPy.shortcut) 
  WomboPy
 
 Команда позволяет ввести текст и указать стиль: 
 
-[![icon1](./dist/imgs/icon2.png )](https://www.icloud.com/shortcuts/da61b07fcc4a4904ae7c15b5839c5cde) 
+[![icon1](./dist/imgs/icon2.png )](./WomboPyDialog.shortcut) 
  WomboPyDialog
 
 Для того чобы полученое изображение автоматически устанавливалось в качестве обоев необходимо в конце команды добавить действие "Установить фото в качестве обоев"
