@@ -38,7 +38,7 @@ def identify(identify_key):
 
 
 
-def create(id_token: str, prompt: str, style: int, ID=None):
+def create(id_token: str, prompt: str, style: int, ID=None,one=False):
     session = requests.Session()
     session.headers.update(
         {
@@ -52,7 +52,7 @@ def create(id_token: str, prompt: str, style: int, ID=None):
     body = '{"input_spec":{"prompt":"' + prompt + '","style":' + str(style)+ ',"display_freq":10}}'        
 
     id=ID
-    display_freq = 10
+    display_freq = 1
     if ID is None:
         id = session.post("https://paint.api.wombo.ai/api/tasks", data='{"premium": false}').json()["id"]
         r = session.put(f"https://paint.api.wombo.ai/api/tasks/{id}", data=body)
@@ -72,6 +72,9 @@ def create(id_token: str, prompt: str, style: int, ID=None):
             id = f.readline()
    
     latest_task = session.get(f"https://paint.api.wombo.ai/api/tasks/{id}").json()
+    if latest_task["state"] != "completed" and one:
+            print("pending")
+            exit(0)
     while latest_task["state"] != "completed":
         time.sleep(display_freq)
         latest_task = session.get(f"https://paint.api.wombo.ai/api/tasks/{id}").json()
@@ -102,6 +105,32 @@ def update_styles(styles_fname):
         f.write("\n".join(lines))
     return styles
 
+def translate(to_translate, to_language="auto", from_language="auto"):
+    import re
+    import html
+    from requests.utils import requote_uri
+    agent = {'User-Agent':
+         "Mozilla/4.0 (\
+        compatible;\
+        MSIE 6.0;\
+        Windows NT 5.1;\
+        SV1;\
+        .NET CLR 1.1.4322;\
+        .NET CLR 2.0.50727;\
+        .NET CLR 3.0.04506.30\
+        )"}
+    base_link = "http://translate.google.com/m?tl=%s&sl=%s&q=%s"
+    to_translate = requote_uri(to_translate)
+    link = base_link % (to_language, from_language, to_translate)
+    request = requests.get(link,headers=agent)
+    expr = r'(?s)class="(?:t0|result-container)">(.*?)<'
+    re_result = re.findall(expr, request.text)
+    if (len(re_result) == 0):
+        result = ""
+    else:
+        result = html.unescape(re_result[0])
+    return (result)
+
 identify_key = "AIzaSyDCvp5MTJLUdtBYEKYWXJrlLzu1zuKM6Xw"
 
 
@@ -116,10 +145,12 @@ parser = argparse.ArgumentParser(
                     epilog = 'Enjoy.')
 parser.add_argument('-k','--key')
 parser.add_argument('-u','--update',action='store_true')          
-parser.add_argument('-i','--id',action='store_true')
+parser.add_argument('-i','--iterations',action='store_true')
+parser.add_argument('-o','--one',action='store_true')
 parser.add_argument('-c','--crop',action='store_true')
 parser.add_argument('-d','--download',action='store_true')          
 parser.add_argument('-s', '--style')      
+parser.add_argument('-t', '--translate',action='store_true')
 parser.add_argument('-p', '--prompt')      
 args = parser.parse_args()
 
@@ -134,8 +165,8 @@ if args.style is not None:
     style = args.style
 if args.prompt is not None:  
     prompt = args.prompt
-if args.id:  
-    task_id = args.id
+if args.iterations:  
+    task_id = args.iterations
 
 if args.crop:
     from PIL import Image
@@ -155,6 +186,8 @@ __dir=os.path.dirname(os.path.realpath(__file__))
 
 if prompt=="r":       
     prompt = generate_prompt(__dir+"/words1",__dir+"/words2")
+if args.translate:    
+    prompt=translate(prompt, 'en')
 
 if style=="r":        
     style = get_random_style(__dir+"/styles")
@@ -162,7 +195,7 @@ if style=="r":
 
 if  not args.download:
     res = identify(identify_key=identify_key)
-    img_uri = create(res["id_token"], prompt, style,task_id)
+    img_uri = create(res["id_token"], prompt, style,task_id,args.one)
     with open('url.dump', 'w') as f:
         f.write(img_uri)    
     print("get url done")   
