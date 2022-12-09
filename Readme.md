@@ -33,7 +33,7 @@ Shortcut для генерации изображений с помощью [Wom
 
 Для обновления списка стилей в ```a-shell``` выполните:
 ```
-python $SHORTCUTS/wombo_create
+python $SHORTCUTS/wombo_create -u
 ```
 
 
