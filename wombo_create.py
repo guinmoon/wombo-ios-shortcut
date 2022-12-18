@@ -147,23 +147,9 @@ def sync_balaboba(orig_text,text_type=29):
         'authority': 'yandex.ru',
         'accept': '*/*',
         'accept-language': 'ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7,tr;q=0.6',
-        'content-type': 'application/json',
-        'cookie': 'yandexuid=6661439881598172333; gdpr=0; _ym_uid=1598172741236237445; yandex_login=svetlakov.art; font_loaded=YSv1; my=Yy4BAQA=; L=V3tnfnNCZAt0ZXlcUFpyXkEHdF5xfwNaJjQrJDhWPywRHBMHOg==.1650910133.14958.382310.5e65922eda40cb548cefbb656d408ba0; is_gdpr=0; is_gdpr_b=CN/1QxDceigC; maps_routes_travel_mode=pedestrian; mda=0; _ym_d=1661953552; i=sBpirENXXPTL70XxYGVxTj3E7hrPj8kvdPEJkUPAx0crSYUOrzouYcmkfaypPzX1BiDzafTI09JKx7WBJpDtkqHZkkQ=; skid=5072158841662295591; yabs-frequency=/5/0000000000000000/1LmOhY66wcEWI240/; uxs_uid=b86d71e0-52d7-11ed-b984-a716bc3a0a85; yp=1676851698.szm.1:2560x1080:1918x978#1966270133.udn.cDrQkNGA0YLRkdC8INCh0LDQstC60LjQvQ%3D%3D; _ga=GA1.2.665324730.1668340417; device_id=acf9a7620e7f6e426f0ef047093baa3fe482af221; active-browser-timestamp=1670159080952; yuidss=6661439881598172333; ymex=1986138190.yrts.1670778190#1977313667.yrtsi.1661953667; Session_id=3:1671124318.5.0.1598172763379:Z83oWw:45.1.2:1|476815516.52737370.2.2:52737370|3:10262653.814841.oE8KD1KWu101cDVoFOqf46tAEjk; sessionid2=3:1671124318.5.0.1598172763379:Z83oWw:45.1.2:1|476815516.52737370.2.2:52737370|3:10262653.814841.fakesign0000000000000000000; ys=udn.cDrQkNGA0YLRkdC8INCh0LDQstC60LjQvQ%3D%3D#c_chck.2237070386; _ym_visorc=w; _ym_isad=1; _yasc=PGoX/oCOAcEclGXNcRffVJTDEqh3ShcVajzRQbi+sCSryX32wCjWQxBJeSuDaq9iV34zzw==; _yasc=MVFvW0JLow+Qd+xBygorYtbjt/QJ8Prrrv0j8caPjYpBWw28OCKXz6UjImHEUSzMJmGMIA==; i=tEpG3D7w+kLceBDH3esnB/oTbGTmWoob810CoP6kL1FVcunFG7M2IdMFjXyeBepTcPmahvEccPTh5R70LkJdBUAGzVc=; is_gdpr=0; is_gdpr_b=CLWnaxC1mwE=',
-        'device-memory': '8',
-        'downlink': '8.1',
-        'dpr': '1',
-        'ect': '4g',
-        'origin': 'https://yandex.ru',
-        'referer': 'https://yandex.ru/lab/yalm?style=11',
-        'rtt': '50',
-        'sec-ch-ua': '"Not?A_Brand";v="8", "Chromium";v="108", "Google Chrome";v="108"',
-        'sec-ch-ua-mobile': '?0',
-        'sec-ch-ua-platform': '"macOS"',
-        'sec-fetch-dest': 'empty',
-        'sec-fetch-mode': 'cors',
-        'sec-fetch-site': 'same-origin',
-        'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36',
-        'viewport-width': '2008'
+        'content-type': 'application/json',        
+        'origin': 'https://yandex.ru',        
+        'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36'
     }    
     conn.request("POST", "/lab/api/yalm/text3", payload, headers)
     res = conn.getresponse()
