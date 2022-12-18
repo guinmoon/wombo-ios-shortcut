@@ -8,6 +8,9 @@ import argparse
 import random
 import os
 import pickle
+import asyncio
+from typing import List, Optional, Union,NamedTuple,Any, Dict,Literal
+from aiohttp import ClientSession
 
 DEBUG=False
 
@@ -131,8 +134,105 @@ def translate(to_translate, to_language="auto", from_language="auto"):
         result = html.unescape(re_result[0])
     return (result)
 
-identify_key = "AIzaSyDCvp5MTJLUdtBYEKYWXJrlLzu1zuKM6Xw"
 
+
+
+
+class HTTPSession:
+    __slots__ = ("session",)
+
+    def __init__(self, session: Optional[ClientSession]) -> None:
+        self.session = session
+
+    async def get_response(
+        self,
+        *,
+        method: str,
+        endpoint: str,
+        json: Optional[Dict[str, Any]] = None,
+    ) -> Any:
+        if isinstance(self.session, ClientSession) and not self.session.closed:
+            return await self._fetch(
+                method=method,
+                endpoint=endpoint,
+                json=json,
+                session=self.session,
+            )
+        async with ClientSession() as session:
+            return await self._fetch(
+                method=method, endpoint=endpoint, json=json, session=session
+            )
+
+    async def _fetch(
+        self,
+        *,
+        method: str,
+        endpoint: str,
+        json: Optional[Dict[str, Any]],
+        session: ClientSession,
+    ) -> Any:
+        async with session.request(
+            method,
+            f"https://yandex.ru/lab/api/yalm/{endpoint}",
+            json=json,
+            raise_for_status=True,
+        ) as response:
+            return await response.json()
+
+class TextType(NamedTuple):
+    number: int
+    name: str
+    description: str
+
+class Balaboba:
+    """Asynchronous wrapper for Yandex Balaboba."""    
+    
+    __slots__ = ("_session",)
+
+    def __init__(self, session: Optional[ClientSession] = None) -> None:
+        """Asynchronous wrapper for Yandex Balaboba."""
+        self._session = HTTPSession(session)
+
+    @property
+    def session(self) -> Optional[ClientSession]:
+        return self._session.session
+
+    @session.setter
+    def session(self, session: Optional[ClientSession]) -> None:
+        self._session.session = session
+
+    async def get_text_types(
+        self, language: Literal["en", "ru"] = "ru"
+    ) -> List[TextType]:
+        endpoint = "intros" if language == "ru" else "intros_eng"
+        response = await self._session.get_response(
+            method="GET", endpoint=endpoint
+        )
+        return [TextType(*intro) for intro in response["intros"]]
+
+    async def balaboba(
+        self, query: str, text_type: Union[TextType, int]
+    ) -> str:
+        intro = (
+            text_type.number if isinstance(text_type, TextType) else text_type
+        )
+        response = await self._session.get_response(
+            method="POST",
+            endpoint="text3",
+            json={"query": query, "intro": intro, "filter": 1},
+        )
+        return "{}{}".format(response["query"], response["text"])
+
+
+async def get_balaboba(orig_text):
+    # from aiobalaboba import Balaboba
+    bb = Balaboba()
+    text_types = await bb.get_text_types(language="en")
+    response = await bb.balaboba(orig_text, text_type=text_types[4])
+    return response
+
+
+identify_key = "AIzaSyDCvp5MTJLUdtBYEKYWXJrlLzu1zuKM6Xw"
 
 style = "r"
 prompt = "r"
@@ -186,6 +286,10 @@ __dir=os.path.dirname(os.path.realpath(__file__))
 
 if prompt=="r":       
     prompt = generate_prompt(__dir+"/words1",__dir+"/words2")
+if prompt=="b":
+    prompt = generate_prompt(__dir+"/words1",__dir+"/words2")
+    prompt=asyncio.run(get_balaboba(prompt))
+
 if args.translate:    
     prompt=translate(prompt, 'en')
 

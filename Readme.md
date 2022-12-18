@@ -1,5 +1,7 @@
 Shortcut для генерации изображений с помощью [Wombo Dream](https://dream.ai/create)
 
+Присуствует возможность генерации случайной фразы, а так же ее трансформации в [Yandex Balaboba](https://yandex.ru/lab/yalm)
+
 Для работы скрипта необходимо установить [a-shell](https://holzschu.github.io/a-Shell_iOS/) 
 
 [![a-shell](./dist/imgs/icon0.jpg)](https://holzschu.github.io/a-Shell_iOS/)
@@ -50,10 +52,10 @@ OPTIONS:
     -c, обрезать изображение 
     -d, загрузить изображение
     -s STYLE, стиль если указано r программа выберет сама
-    -p PROMPT,  текст если указано r программа выберет сама
+    -p PROMPT,  текст если указано r программа выберет сама, если указано -b используется yandex balaboba
 ```
 ```
-python3 wombo_create.py && \
+python3 wombo_create.py -p b && \
  python3 wombo_create.py -i && \
   python3 wombo_create.py -d && \
    python3 wombo_create.py -c
