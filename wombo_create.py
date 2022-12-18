@@ -10,7 +10,8 @@ import os
 import pickle
 import asyncio
 from typing import List, Optional, Union,NamedTuple,Any, Dict,Literal
-from aiohttp import ClientSession
+from requests import Session
+# from aiohttp import ClientSession
 
 DEBUG=False
 
@@ -138,85 +139,162 @@ def translate(to_translate, to_language="auto", from_language="auto"):
 
 
 
+# class HTTPSession:
+#     __slots__ = ("session",)
+
+#     def __init__(self, session: Optional[ClientSession]) -> None:
+#         self.session = session
+
+#     async def get_response(
+#         self,
+#         *,
+#         method: str,
+#         endpoint: str,
+#         json: Optional[Dict[str, Any]] = None,
+#     ) -> Any:
+#         if isinstance(self.session, ClientSession) and not self.session.closed:
+#             return await self._fetch(
+#                 method=method,
+#                 endpoint=endpoint,
+#                 json=json,
+#                 session=self.session,
+#             )
+#         async with ClientSession() as session:
+#             return await self._fetch(
+#                 method=method, endpoint=endpoint, json=json, session=session
+#             )
+
+#     async def _fetch(
+#         self,
+#         *,
+#         method: str,
+#         endpoint: str,
+#         json: Optional[Dict[str, Any]],
+#         session: ClientSession,
+#     ) -> Any:
+#         async with session.request(
+#             method,
+#             f"https://yandex.ru/lab/api/yalm/{endpoint}",
+#             json=json,
+#             raise_for_status=True,
+#         ) as response:
+#             return await response.json()
+
 class HTTPSession:
     __slots__ = ("session",)
 
-    def __init__(self, session: Optional[ClientSession]) -> None:
+    def __init__(self, session: Optional[Session]) -> None:
         self.session = session
 
-    async def get_response(
+    def get_response(
         self,
         *,
         method: str,
         endpoint: str,
         json: Optional[Dict[str, Any]] = None,
     ) -> Any:
-        if isinstance(self.session, ClientSession) and not self.session.closed:
-            return await self._fetch(
+        if isinstance(self.session, Session):
+            return self._fetch(
                 method=method,
                 endpoint=endpoint,
                 json=json,
                 session=self.session,
             )
-        async with ClientSession() as session:
-            return await self._fetch(
+        with Session() as session:
+            return self._fetch(
                 method=method, endpoint=endpoint, json=json, session=session
             )
 
-    async def _fetch(
+    def _fetch(
         self,
         *,
         method: str,
         endpoint: str,
         json: Optional[Dict[str, Any]],
-        session: ClientSession,
+        session: Session,
     ) -> Any:
-        async with session.request(
-            method,
-            f"https://yandex.ru/lab/api/yalm/{endpoint}",
-            json=json,
-            raise_for_status=True,
+        with session.request(
+            method, f"https://yandex.ru/lab/api/yalm/{endpoint}", json=json
         ) as response:
-            return await response.json()
+            response.raise_for_status()
+            return response.json()
+
 
 class TextType(NamedTuple):
     number: int
     name: str
     description: str
 
+
+# class Balaboba:
+#     """Asynchronous wrapper for Yandex Balaboba."""
+
+#     __slots__ = ("_session",)
+
+#     def __init__(self, session: Optional[ClientSession] = None) -> None:
+#         """Asynchronous wrapper for Yandex Balaboba."""
+#         self._session = HTTPSession(session)
+
+#     @property
+#     def session(self) -> Optional[ClientSession]:
+#         return self._session.session
+
+#     @session.setter
+#     def session(self, session: Optional[ClientSession]) -> None:
+#         self._session.session = session
+
+#     async def get_text_types(
+#         self, language: Literal["en", "ru"] = "ru"
+#     ) -> List[TextType]:
+#         endpoint = "intros" if language == "ru" else "intros_eng"
+#         response = await self._session.get_response(
+#             method="GET", endpoint=endpoint
+#         )
+#         return [TextType(*intro) for intro in response["intros"]]
+
+#     async def balaboba(
+#         self, query: str, text_type: Union[TextType, int]
+#     ) -> str:
+#         intro = (
+#             text_type.number if isinstance(text_type, TextType) else text_type
+#         )
+#         response = await self._session.get_response(
+#             method="POST",
+#             endpoint="text3",
+#             json={"query": query, "intro": intro, "filter": 1},
+#         )
+#         return "{}{}".format(response["query"], response["text"])
+
+
 class Balaboba:
-    """Asynchronous wrapper for Yandex Balaboba."""    
-    
+    """Wrapper for Yandex Balaboba."""
+
     __slots__ = ("_session",)
 
-    def __init__(self, session: Optional[ClientSession] = None) -> None:
-        """Asynchronous wrapper for Yandex Balaboba."""
+    def __init__(self, session: Optional[Session] = None) -> None:
+        """Wrapper for Yandex Balaboba."""
         self._session = HTTPSession(session)
 
     @property
-    def session(self) -> Optional[ClientSession]:
+    def session(self) -> Optional[Session]:
         return self._session.session
 
     @session.setter
-    def session(self, session: Optional[ClientSession]) -> None:
+    def session(self, session: Optional[Session]) -> None:
         self._session.session = session
 
-    async def get_text_types(
+    def get_text_types(
         self, language: Literal["en", "ru"] = "ru"
     ) -> List[TextType]:
         endpoint = "intros" if language == "ru" else "intros_eng"
-        response = await self._session.get_response(
-            method="GET", endpoint=endpoint
-        )
+        response = self._session.get_response(method="GET", endpoint=endpoint)
         return [TextType(*intro) for intro in response["intros"]]
 
-    async def balaboba(
-        self, query: str, text_type: Union[TextType, int]
-    ) -> str:
+    def balaboba(self, query: str, text_type: Union[TextType, int]) -> str:
         intro = (
             text_type.number if isinstance(text_type, TextType) else text_type
         )
-        response = await self._session.get_response(
+        response = self._session.get_response(
             method="POST",
             endpoint="text3",
             json={"query": query, "intro": intro, "filter": 1},
@@ -227,8 +305,10 @@ class Balaboba:
 async def get_balaboba(orig_text):
     # from aiobalaboba import Balaboba
     bb = Balaboba()
-    text_types = await bb.get_text_types(language="en")
-    response = await bb.balaboba(orig_text, text_type=text_types[4])
+    # text_types = await bb.get_text_types(language="en")
+    # response = await bb.balaboba(orig_text, text_type=text_types[4])
+    text_types = bb.get_text_types(language="en")
+    response =  bb.balaboba(orig_text, text_type=text_types[4])
     return response
 
 
@@ -288,6 +368,10 @@ if prompt=="r":
     prompt = generate_prompt(__dir+"/words1",__dir+"/words2")
 if prompt=="b":
     prompt = generate_prompt(__dir+"/words1",__dir+"/words2")
+    # from balaboba import Balaboba
+    # bb = Balaboba()
+    # text_types = bb.get_text_types(language="en")
+    # response = bb.balaboba(prompt, text_type=text_types[4])
     prompt=asyncio.run(get_balaboba(prompt))
 
 if args.translate:    
