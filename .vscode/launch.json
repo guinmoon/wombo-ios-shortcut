@@ -27,8 +27,9 @@
             "program": "${file}",
             "console": "integratedTerminal",
             "args": [
+                "-t",
                 "-p",
-                "b"
+                "две собаки на луне"
             ]
         }
     ]

@@ -2,89 +2,86 @@
 #!/usr/bin/python3
 
 import http.client
-import requests
 import json
 import time
 import argparse
 import random
 import os
 import pickle
-
+import ssl
 
 
 DEBUG=False
 
-def identify(identify_key):    
-    body = {"key": identify_key}
-    r = requests.post(
-        f"https://identitytoolkit.googleapis.com/v1/accounts:signUp?key={identify_key}",
-        data=body,
-    )
-    if r.status_code != requests.codes.ok:
-        error = f"Error during identification. Status code error: {r.status_code}"
-        print(error)
-        exit(1)
-    id_token = r.json()["idToken"]
-    local_id = ""
-    # body = {"idToken": id_token}
-    # r = requests.post(
-    #     f"https://identitytoolkit.googleapis.com/v1/accounts:lookup?key={identify_key}",
-    #     data=body,
-    # )
-    # if r.status_code != requests.codes.ok:
-    #     assert False, f"Error during identification. Status code error: {r.status_code}"
-    # local_id = r.json()["users"][0]["localId"]
-    # if DEBUG:
-    #     print("Identification done!")
+_unverified_context = ssl._create_unverified_context()
 
+def identify(identify_key):    
+    conn = http.client.HTTPSConnection("identitytoolkit.googleapis.com",context = _unverified_context)    
+    payload = json.dumps(
+        {"key": identify_key}
+    )
+    headers = {}
+    conn.request("POST", f"/v1/accounts:signUp?key={identify_key}", payload, headers)
+    res = conn.getresponse()
+    data = res.read()
+    data=json.loads(data)
+    id_token = data["idToken"]
+    local_id = ""
     return {"id_token": id_token, "local_id": local_id}
 
 
 
-def create(id_token: str, prompt: str, style: int, ID=None,one=False):
-    session = requests.Session()
-    session.headers.update(
-        {
+def create(id_token: str, prompt: str, style: int, ID=None,one=False):    
+    conn = http.client.HTTPSConnection("paint.api.wombo.ai",context = _unverified_context)    
+    headers={
             "Authorization": "bearer " + id_token,
             "Origin": "https://paint.api.wombo.ai/",
             "Referer": "https://paint.api.wombo.ai/",
             "User-Agent": "Mozilla/5.0",
         }
-    )
     
     body = '{"input_spec":{"prompt":"' + prompt + '","style":' + str(style)+ ',"display_freq":10}}'        
 
     id=ID
     display_freq = 1
-    if ID is None:
-        id = session.post("https://paint.api.wombo.ai/api/tasks", data='{"premium": false}').json()["id"]
-        r = session.put(f"https://paint.api.wombo.ai/api/tasks/{id}", data=body)
+    if ID is None:        
+        conn.request("POST", f"/api/tasks", '{"premium": false}', headers)
+        data=conn.getresponse().read()        
+        id=json.loads(data)["id"]
+        conn.request("PUT", f"/api/tasks/{id}", body, headers)
+        data=conn.getresponse().read()        
+        r=json.loads(data)             
         if DEBUG:
-            print(f"Status: {r.json()['state']}")
-        display_freq = r.json()["input_spec"]["display_freq"] / 10
-        with open('session.dump', 'wb') as f:
-            pickle.dump(session, f)
+            print(f"Status: {r['state']}")
+        display_freq = r["input_spec"]["display_freq"] / 10
+        with open('headers.dump', 'wb') as f:
+            pickle.dump(headers, f)
         with open('id.dump', 'w') as f:
             f.write(id)
         print(prompt)
         exit(0)
     else:
-        with open('session.dump', 'rb') as f:
-            session = pickle.load(f)
+        with open('headers.dump', 'rb') as f:
+            headers = pickle.load(f)
         with open('id.dump', 'r') as f:
             id = f.readline()
    
-    latest_task = session.get(f"https://paint.api.wombo.ai/api/tasks/{id}").json()
+    conn.request("GET", f"/api/tasks/{id}", body, headers)
+    data=conn.getresponse().read()        
+    latest_task=json.loads(data)     
     if latest_task["state"] != "completed" and one:
             print("pending")
             exit(0)
     while latest_task["state"] != "completed":
         time.sleep(display_freq)
-        latest_task = session.get(f"https://paint.api.wombo.ai/api/tasks/{id}").json()
+        conn.request("GET", f"/api/tasks/{id}", body, headers)
+        data=conn.getresponse().read()        
+        latest_task=json.loads(data)         
 
-
-    result = session.post(f"https://paint.api.wombo.ai/api/tradingcard/{id}")
-    img_uri = result.json()
+    
+    conn.request("POST", f"/api/tradingcard/{id}", body, headers)
+    data=conn.getresponse().read()        
+    img_uri=json.loads(data) 
     return img_uri
 
 
@@ -99,8 +96,10 @@ def generate_prompt(prompttext1,prompttext2):
 
 
 def update_styles(styles_fname):
-    r = requests.get("https://paint.api.wombo.ai/api/styles")
-    styles = json.loads(r.text)
+    conn = http.client.HTTPSConnection("paint.api.wombo.ai",context = _unverified_context)    
+    conn.request("GET", f"/api/styles")
+    data=conn.getresponse().read()        
+    styles = json.loads(data)
     lines = []
     for style in styles:
         lines.append(str(style["id"]))
@@ -110,8 +109,8 @@ def update_styles(styles_fname):
 
 def translate(to_translate, to_language="auto", from_language="auto"):
     import re
-    import html
-    from requests.utils import requote_uri
+    import html    
+    from urllib.parse import quote
     agent = {'User-Agent':
          "Mozilla/4.0 (\
         compatible;\
@@ -122,12 +121,14 @@ def translate(to_translate, to_language="auto", from_language="auto"):
         .NET CLR 2.0.50727;\
         .NET CLR 3.0.04506.30\
         )"}
-    base_link = "http://translate.google.com/m?tl=%s&sl=%s&q=%s"
-    to_translate = requote_uri(to_translate)
-    link = base_link % (to_language, from_language, to_translate)
-    request = requests.get(link,headers=agent)
+    base_link = "/m?tl=%s&sl=%s&q=%s"        
+    to_translate = quote(to_translate, safe="")
+    link = base_link % (to_language, from_language, to_translate)    
+    conn = http.client.HTTPSConnection("translate.google.com",context = _unverified_context)    
+    conn.request("GET", link,headers=agent)
+    data=conn.getresponse().read().decode("utf-8")    
     expr = r'(?s)class="(?:t0|result-container)">(.*?)<'
-    re_result = re.findall(expr, request.text)
+    re_result = re.findall(expr, data)
     if (len(re_result) == 0):
         result = ""
     else:
@@ -135,8 +136,7 @@ def translate(to_translate, to_language="auto", from_language="auto"):
     return (result)
 
 
-def sync_balaboba(orig_text,text_type=29):        
-    import ssl
+def sync_balaboba(orig_text,text_type=32):            
     conn = http.client.HTTPSConnection("yandex.ru",context = ssl._create_unverified_context())    
     payload = json.dumps({
         "query": orig_text,
@@ -182,7 +182,7 @@ parser.add_argument('-p', '--prompt')
 args = parser.parse_args()
 
 if args.update:
-    update_styles("styles.txt")
+    update_styles("styles")
     print("done")
     exit(0)
 
@@ -215,7 +215,7 @@ if prompt=="r":
     prompt = generate_prompt(__dir+"/words1",__dir+"/words2")
 if prompt=="b":
     prompt = generate_prompt(__dir+"/words1",__dir+"/words2")
-    prompt=sync_balaboba(prompt,29)
+    prompt=sync_balaboba(prompt,27)
 
 if args.translate:    
     prompt=translate(prompt, 'en')
@@ -232,10 +232,12 @@ if  not args.download:
     print("get url done")   
 else:
     with open('url.dump', 'r') as f:
+        import urllib.request        
         img_uri=f.readline()
-        r = requests.get(img_uri, allow_redirects=True)
-        open(res_f_name, 'wb').write(r.content)
+        ssl._create_default_https_context = ssl._create_unverified_context
+        urllib.request.urlretrieve(img_uri, res_f_name)
     print("download img done")   
 
 # print(img_uri)
 
+# python3 wombo_create.py -p b && python3 wombo_create.py -i && python3 wombo_create.py -d && python3 wombo_create.py -c
