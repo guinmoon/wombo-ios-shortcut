@@ -1,6 +1,7 @@
 
 #!/usr/bin/python3
 
+import http.client
 import requests
 import json
 import time
@@ -8,6 +9,8 @@ import argparse
 import random
 import os
 import pickle
+
+
 
 DEBUG=False
 
@@ -132,10 +135,9 @@ def translate(to_translate, to_language="auto", from_language="auto"):
     return (result)
 
 
-def sync_balaboba(orig_text,text_type=29):
-    import http.client
-    import json
-    conn = http.client.HTTPSConnection("yandex.ru")
+def sync_balaboba(orig_text,text_type=29):        
+    import ssl
+    conn = http.client.HTTPSConnection("yandex.ru",context = ssl._create_unverified_context())    
     payload = json.dumps({
         "query": orig_text,
         "intro": text_type,
@@ -162,7 +164,7 @@ def sync_balaboba(orig_text,text_type=29):
         'sec-fetch-site': 'same-origin',
         'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36',
         'viewport-width': '2008'
-    }
+    }    
     conn.request("POST", "/lab/api/yalm/text3", payload, headers)
     res = conn.getresponse()
     data = res.read()
