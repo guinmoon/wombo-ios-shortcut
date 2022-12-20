@@ -58,6 +58,8 @@ def create(id_token: str, prompt: str, style: int, ID=None,one=False):
             pickle.dump(headers, f)
         with open('id.dump', 'w') as f:
             f.write(id)
+        with open('prompt.dump', 'w') as f:
+            f.write(prompt)
         print(prompt)
         exit(0)
     else:
@@ -157,6 +159,14 @@ def sync_balaboba(orig_text,text_type=32):
     data=json.loads(data)
     return "{} {}".format(data["query"],data["text"])
 
+def escape_prompt(in_prompt):
+    prompt = in_prompt.replace("'","")
+    prompt = prompt.replace("\n","")
+    prompt = prompt.replace(":","")
+    prompt = prompt.replace("  "," ")
+    prompt = prompt.replace("\\","")
+    return prompt
+
 
 
 identify_key = "AIzaSyDCvp5MTJLUdtBYEKYWXJrlLzu1zuKM6Xw"
@@ -176,6 +186,7 @@ parser.add_argument('-i','--iterations',action='store_true')
 parser.add_argument('-o','--one',action='store_true')
 parser.add_argument('-c','--crop',action='store_true')
 parser.add_argument('-d','--download',action='store_true')          
+parser.add_argument('-r','--rename',action='store_true')
 parser.add_argument('-s', '--style')      
 parser.add_argument('-t', '--translate',action='store_true')
 parser.add_argument('-p', '--prompt')      
@@ -205,6 +216,11 @@ if args.crop:
     bottom = height-154
     
     im = im.crop((left, top, right, bottom))
+    if args.rename:
+        from datetime import datetime
+        now = datetime.now()            
+        dt_string = now.strftime("%Y-%m-%d_%H_%M_%S")
+        res_f_name = __dir=os.path.dirname(os.path.realpath(__file__))+f'/{dt_string}.jpg'
     im.save(res_f_name)
     print("crop done")
     exit(0)
@@ -218,11 +234,14 @@ if prompt=="b":
     prompt=sync_balaboba(prompt,27)
 
 if args.translate:    
+    prompt = prompt.replace('\n','')
+    prompt = prompt.replace('+','')
     prompt=translate(prompt, 'en')
 
 if style=="r":        
     style = get_random_style(__dir+"/styles")
 
+prompt = escape_prompt(prompt)
 
 if  not args.download:
     res = identify(identify_key=identify_key)
@@ -234,7 +253,7 @@ else:
     with open('url.dump', 'r') as f:
         import urllib.request        
         img_uri=f.readline()
-        ssl._create_default_https_context = ssl._create_unverified_context
+        ssl._create_default_https_context = ssl._create_unverified_context                
         urllib.request.urlretrieve(img_uri, res_f_name)
     print("download img done")   
 
