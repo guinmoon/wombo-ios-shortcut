@@ -221,6 +221,10 @@ if args.crop:
         now = datetime.now()            
         dt_string = now.strftime("%Y-%m-%d_%H_%M_%S")
         res_f_name = __dir=os.path.dirname(os.path.realpath(__file__))+f'/{dt_string}.jpg'
+        with open('prompt.dump', 'r') as f:
+            info_prompt = f.readlines()
+            with open(res_f_name+'.txt', 'w') as f:
+                f.writelines(info_prompt)
     im.save(res_f_name)
     print("crop done")
     exit(0)
