@@ -28,7 +28,9 @@
             "console": "integratedTerminal",
             "args": [
                 "-p",
-                "Follow the white rabbit"
+                "Follow the white rabbit",
+                "-b",
+                "-r"
             ]
         }
     ]

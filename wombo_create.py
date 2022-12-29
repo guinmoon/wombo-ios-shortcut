@@ -87,9 +87,14 @@ def create(id_token: str, prompt: str, style: int, ID=None,one=False):
     return img_uri
 
 
-def get_random_style(styles_fname):
+def get_random_style(styles_fname,styles_blist_fname=None):
     styles = open(styles_fname).read().splitlines()
-    return styles[random.randint(0,len(styles)-1)]
+    style = styles[random.randint(0,len(styles)-1)] 
+    if styles_blist_fname is not None:
+        styles_blist = open(styles_blist_fname).read().splitlines()        
+        while style in styles_blist:
+            style = styles[random.randint(0,len(styles)-1)] 
+    return style
 
 def generate_prompt(prompttext1,prompttext2):
     prompt1 = open(prompttext1).read().splitlines()
@@ -187,6 +192,7 @@ parser.add_argument('-o','--one',action='store_true')
 parser.add_argument('-c','--crop',action='store_true')
 parser.add_argument('-d','--download',action='store_true')          
 parser.add_argument('-r','--rename',action='store_true')
+parser.add_argument('-b','--blacklist',action='store_true')
 parser.add_argument('-s', '--style')      
 parser.add_argument('-t', '--translate',action='store_true')
 parser.add_argument('-p', '--prompt')      
@@ -220,7 +226,7 @@ if args.crop:
         from datetime import datetime
         now = datetime.now()            
         dt_string = now.strftime("%Y-%m-%d_%H_%M_%S")
-        res_f_name = __dir=os.path.dirname(os.path.realpath(__file__))+f'/{dt_string}.jpg'
+        res_f_name = __dir=os.path.dirname(os.path.realpath(__file__))+f'/out/{dt_string}.jpg'
         with open('prompt.dump', 'r') as f:
             info_prompt = f.readlines()
             with open(res_f_name+'.txt', 'w') as f:
@@ -243,7 +249,11 @@ if args.translate:
     prompt=translate(prompt, 'en')
 
 if style=="r":        
-    style = get_random_style(__dir+"/styles")
+    if args.blacklist:
+        style = get_random_style(__dir+"/styles",__dir+"/styles_blist")    
+    else:
+        style = get_random_style(__dir+"/styles")    
+
 
 prompt = escape_prompt(prompt)
 
