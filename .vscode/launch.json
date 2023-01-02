@@ -27,6 +27,7 @@
             "program": "${file}",
             "console": "integratedTerminal",
             "args": [
+                "-u",
                 "-p",
                 "Follow the white rabbit",
                 "-b",

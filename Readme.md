@@ -62,3 +62,5 @@ python3 wombo_create.py -i && \
 python3 wombo_create.py -d && \
 python3 wombo_create.py -c
 ```
+
+Для генерации множества картинок по одному тексту можно использовать `./gen_storm.sh "cloud in space"`
